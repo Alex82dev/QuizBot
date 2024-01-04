@@ -1,0 +1,76 @@
+Определение методов `answer()` и `wait_for_element()` в классе `Website` 
+
+
+
+```python
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+class Website:
+    def __init__(self):
+        self.driver = webdriver.Chrome()  # Инициализация драйвера Chrome
+
+    def answer(self, answer_text):
+        answer_input = self.driver.find_element(By.XPATH, '//input[@type="text"]')
+        answer_input.clear()
+        answer_input.send_keys(answer_text)
+        submit_button = self.driver.find_element(By.XPATH, '//button[@type="submit"]')
+        submit_button.click()
+
+    def wait_for_element(self, locator):
+        wait = WebDriverWait(self.driver, 10)
+        element = wait.until(EC.presence_of_element_located(locator))
+        return element
+```
+
+Метод `answer()` принимает текст ответа в качестве аргумента и находит элемент ввода текста на странице с помощью XPath. Затем метод очищает поле ввода, вводит ответ и нажимает кнопку отправки.
+
+Метод `wait_for_element()` использует класс `WebDriverWait` из Selenium для ожидания появления элемента на странице. Он принимает локатор (например, `(By.XPATH, '//div[@class="question"]')`) в качестве аргумента и ожидает, пока элемент не будет найден на странице. После этого метод возвращает найденный элемент.
+
+Убедитесь, что вы импортировали классы `By`, `WebDriverWait` и `expected_conditions` из модуля `selenium.webdriver` в начале вашего кода.
+
+Теперь вы можете использовать эти методы в вашем коде для правильного прохождения квиза. Например, в методе `get_quiz()`:
+
+```python
+def get_quiz(update, context):
+    if 'username' not in context.user_data:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Введите свой логин с помощью команды /start")
+        return
+
+    if 'password' not in context.user_data:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Введите свой пароль:")
+        return "get_password"
+
+    # Получение логина и пароля из context.user_data
+    username = context.user_data['username']
+    password = context.user_data['password']
+
+    # Создание экземпляра класса Website
+    website = Website()
+
+    # Вход на сайт и переход к квизу
+    website.login(username, password)
+    website.go_to_quiz()
+
+    # Прохождение квиза
+    current_question = 1
+    while website.is_quiz_in_progress():
+        question_text = website.get_question_text()
+        answer = get_answer(question_text)  # Функция для получения ответа на вопрос
+        website.answer(answer)
+        current_question += 1
+
+    # Завершение квиза
+    result = website.get_quiz_result()
+    context.bot.send_message(chat_id=update.effective_chat.id, text=f"Квиз завершен. Результат: {result}")
+
+    # Закрытие браузера
+    website.close()
+
+    return ConversationHandler.END
+```
+
+Обратите внимание, что вы должны определить функцию `get_answer()`, которая принимает текст вопроса в качестве аргумента и возвращает ответ на этот вопрос.
+
+ 
